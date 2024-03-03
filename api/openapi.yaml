@@ -1,0 +1,757 @@
+openapi: 3.0.1
+info:
+  description: API of the Prometheus Alertmanager (https://github.com/prometheus/alertmanager)
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  title: Alertmanager API
+  version: 0.0.1
+servers:
+- url: /api/v2/
+tags:
+- description: General Alertmanager operations
+  name: general
+- description: Everything related to Alertmanager receivers
+  name: receiver
+- description: Everything related to Alertmanager silences
+  name: silence
+- description: Everything related to Alertmanager alerts
+  name: alert
+paths:
+  /status:
+    get:
+      description: Get current status of an Alertmanager instance and its cluster
+      operationId: getStatus
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/alertmanagerStatus'
+          description: Get status response
+      tags:
+      - general
+  /receivers:
+    get:
+      description: Get list of all receivers (name of notification integrations)
+      operationId: getReceivers
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/receiver'
+                type: array
+          description: Get receivers response
+      tags:
+      - receiver
+  /silences:
+    get:
+      description: Get a list of silences
+      operationId: getSilences
+      parameters:
+      - description: A list of matchers to filter silences by
+        explode: true
+        in: query
+        name: filter
+        schema:
+          items:
+            type: string
+          type: array
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gettableSilences'
+          description: Get silences response
+        "400":
+          content:
+            application/json:
+              schema:
+                type: string
+          description: Bad request
+        "500":
+          content:
+            application/json:
+              schema:
+                type: string
+          description: Internal server error
+      tags:
+      - silence
+    post:
+      description: Post a new silence or update an existing one
+      operationId: postSilences
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/postableSilence'
+        description: The silence to create
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/postSilences_200_response'
+          description: Create / update silence response
+        "400":
+          content:
+            application/json:
+              schema:
+                type: string
+          description: Bad request
+        "404":
+          content:
+            application/json:
+              schema:
+                type: string
+          description: A silence with the specified ID was not found
+      tags:
+      - silence
+      x-codegen-request-body-name: silence
+  /silence/{silenceID}:
+    delete:
+      description: Delete a silence by its ID
+      operationId: deleteSilence
+      parameters:
+      - description: ID of the silence to get
+        in: path
+        name: silenceID
+        required: true
+        schema:
+          format: uuid
+          type: string
+      responses:
+        "200":
+          content: {}
+          description: Delete silence response
+        "404":
+          content: {}
+          description: A silence with the specified ID was not found
+        "500":
+          content:
+            application/json:
+              schema:
+                type: string
+          description: Internal server error
+      tags:
+      - silence
+    get:
+      description: Get a silence by its ID
+      operationId: getSilence
+      parameters:
+      - description: ID of the silence to get
+        in: path
+        name: silenceID
+        required: true
+        schema:
+          format: uuid
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gettableSilence'
+          description: Get silence response
+        "404":
+          content: {}
+          description: A silence with the specified ID was not found
+        "500":
+          content:
+            application/json:
+              schema:
+                type: string
+          description: Internal server error
+      tags:
+      - silence
+  /alerts:
+    get:
+      description: Get a list of alerts
+      operationId: getAlerts
+      parameters:
+      - description: Show active alerts
+        in: query
+        name: active
+        schema:
+          default: true
+          type: boolean
+      - description: Show silenced alerts
+        in: query
+        name: silenced
+        schema:
+          default: true
+          type: boolean
+      - description: Show inhibited alerts
+        in: query
+        name: inhibited
+        schema:
+          default: true
+          type: boolean
+      - description: Show unprocessed alerts
+        in: query
+        name: unprocessed
+        schema:
+          default: true
+          type: boolean
+      - description: A list of matchers to filter alerts by
+        explode: true
+        in: query
+        name: filter
+        schema:
+          items:
+            type: string
+          type: array
+        style: form
+      - description: A regex matching receivers to filter alerts by
+        in: query
+        name: receiver
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gettableAlerts'
+          description: Get alerts response
+        "400":
+          content:
+            application/json:
+              schema:
+                type: string
+          description: Bad request
+        "500":
+          content:
+            application/json:
+              schema:
+                type: string
+          description: Internal server error
+      tags:
+      - alert
+    post:
+      description: Create new Alerts
+      operationId: postAlerts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/postableAlerts'
+        description: The alerts to create
+        required: true
+      responses:
+        "200":
+          content: {}
+          description: Create alerts response
+        "500":
+          content:
+            application/json:
+              schema:
+                type: string
+          description: Internal server error
+        "400":
+          content:
+            application/json:
+              schema:
+                type: string
+          description: Bad request
+      tags:
+      - alert
+      x-codegen-request-body-name: alerts
+  /alerts/groups:
+    get:
+      description: Get a list of alert groups
+      operationId: getAlertGroups
+      parameters:
+      - description: Show active alerts
+        in: query
+        name: active
+        schema:
+          default: true
+          type: boolean
+      - description: Show silenced alerts
+        in: query
+        name: silenced
+        schema:
+          default: true
+          type: boolean
+      - description: Show inhibited alerts
+        in: query
+        name: inhibited
+        schema:
+          default: true
+          type: boolean
+      - description: A list of matchers to filter alerts by
+        explode: true
+        in: query
+        name: filter
+        schema:
+          items:
+            type: string
+          type: array
+        style: form
+      - description: A regex matching receivers to filter alerts by
+        in: query
+        name: receiver
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/alertGroups'
+          description: Get alert groups response
+        "400":
+          content:
+            application/json:
+              schema:
+                type: string
+          description: Bad request
+        "500":
+          content:
+            application/json:
+              schema:
+                type: string
+          description: Internal server error
+      tags:
+      - alertgroup
+components:
+  responses:
+    BadRequest:
+      content:
+        application/json:
+          schema:
+            type: string
+      description: Bad request
+    InternalServerError:
+      content:
+        application/json:
+          schema:
+            type: string
+      description: Internal server error
+  schemas:
+    alertmanagerStatus:
+      example:
+        cluster:
+          name: name
+          peers:
+          - address: address
+            name: name
+          - address: address
+            name: name
+          status: ready
+        versionInfo:
+          buildUser: buildUser
+          goVersion: goVersion
+          buildDate: buildDate
+          version: version
+          branch: branch
+          revision: revision
+        config:
+          original: original
+        uptime: 2000-01-23T04:56:07.000+00:00
+      properties:
+        cluster:
+          $ref: '#/components/schemas/clusterStatus'
+        versionInfo:
+          $ref: '#/components/schemas/versionInfo'
+        config:
+          $ref: '#/components/schemas/alertmanagerConfig'
+        uptime:
+          format: date-time
+          type: string
+      required:
+      - cluster
+      - config
+      - uptime
+      - versionInfo
+      type: object
+    clusterStatus:
+      example:
+        name: name
+        peers:
+        - address: address
+          name: name
+        - address: address
+          name: name
+        status: ready
+      properties:
+        name:
+          type: string
+        status:
+          enum:
+          - ready
+          - settling
+          - disabled
+          type: string
+        peers:
+          items:
+            $ref: '#/components/schemas/peerStatus'
+          type: array
+      required:
+      - status
+      type: object
+    alertmanagerConfig:
+      example:
+        original: original
+      properties:
+        original:
+          type: string
+      required:
+      - original
+      type: object
+    versionInfo:
+      example:
+        buildUser: buildUser
+        goVersion: goVersion
+        buildDate: buildDate
+        version: version
+        branch: branch
+        revision: revision
+      properties:
+        version:
+          type: string
+        revision:
+          type: string
+        branch:
+          type: string
+        buildUser:
+          type: string
+        buildDate:
+          type: string
+        goVersion:
+          type: string
+      required:
+      - branch
+      - buildDate
+      - buildUser
+      - goVersion
+      - revision
+      - version
+      type: object
+    peerStatus:
+      example:
+        address: address
+        name: name
+      properties:
+        name:
+          type: string
+        address:
+          type: string
+      required:
+      - address
+      - name
+      type: object
+    silence:
+      properties:
+        matchers:
+          items:
+            $ref: '#/components/schemas/matcher'
+          minItems: 1
+          type: array
+        startsAt:
+          format: date-time
+          type: string
+        endsAt:
+          format: date-time
+          type: string
+        createdBy:
+          type: string
+        comment:
+          type: string
+      required:
+      - comment
+      - createdBy
+      - endsAt
+      - matchers
+      - startsAt
+      type: object
+    gettableSilence:
+      allOf:
+      - properties:
+          id:
+            type: string
+          status:
+            $ref: '#/components/schemas/silenceStatus'
+          updatedAt:
+            format: date-time
+            type: string
+        required:
+        - id
+        - status
+        - updatedAt
+        type: object
+      - $ref: '#/components/schemas/silence'
+      example:
+        matchers:
+        - isRegex: true
+          isEqual: true
+          name: name
+          value: value
+        - isRegex: true
+          isEqual: true
+          name: name
+          value: value
+        createdBy: createdBy
+        startsAt: 2000-01-23T04:56:07.000+00:00
+        comment: comment
+        id: id
+        endsAt: 2000-01-23T04:56:07.000+00:00
+        status:
+          state: expired
+        updatedAt: 2000-01-23T04:56:07.000+00:00
+    postableSilence:
+      allOf:
+      - properties:
+          id:
+            type: string
+        type: object
+      - $ref: '#/components/schemas/silence'
+    silenceStatus:
+      example:
+        state: expired
+      properties:
+        state:
+          enum:
+          - expired
+          - active
+          - pending
+          type: string
+      required:
+      - state
+      type: object
+    gettableSilences:
+      items:
+        $ref: '#/components/schemas/gettableSilence'
+      type: array
+    matchers:
+      items:
+        $ref: '#/components/schemas/matcher'
+      minItems: 1
+      type: array
+    matcher:
+      example:
+        isRegex: true
+        isEqual: true
+        name: name
+        value: value
+      properties:
+        name:
+          type: string
+        value:
+          type: string
+        isRegex:
+          type: boolean
+        isEqual:
+          default: true
+          type: boolean
+      required:
+      - isRegex
+      - name
+      - value
+      type: object
+    alert:
+      properties:
+        labels:
+          additionalProperties:
+            type: string
+          type: object
+        generatorURL:
+          format: uri
+          type: string
+      required:
+      - labels
+      type: object
+    gettableAlerts:
+      items:
+        $ref: '#/components/schemas/gettableAlert'
+      type: array
+    gettableAlert:
+      allOf:
+      - properties:
+          annotations:
+            $ref: '#/components/schemas/labelSet'
+          receivers:
+            items:
+              $ref: '#/components/schemas/receiver'
+            type: array
+          fingerprint:
+            type: string
+          startsAt:
+            format: date-time
+            type: string
+          updatedAt:
+            format: date-time
+            type: string
+          endsAt:
+            format: date-time
+            type: string
+          status:
+            $ref: '#/components/schemas/alertStatus'
+        required:
+        - annotations
+        - endsAt
+        - fingerprint
+        - receivers
+        - startsAt
+        - status
+        - updatedAt
+        type: object
+      - $ref: '#/components/schemas/alert'
+      example:
+        generatorURL: https://openapi-generator.tech
+        receivers:
+        - name: name
+        - name: name
+        fingerprint: fingerprint
+        annotations: null
+        startsAt: 2000-01-23T04:56:07.000+00:00
+        endsAt: 2000-01-23T04:56:07.000+00:00
+        updatedAt: 2000-01-23T04:56:07.000+00:00
+        status:
+          silencedBy:
+          - silencedBy
+          - silencedBy
+          state: unprocessed
+          inhibitedBy:
+          - inhibitedBy
+          - inhibitedBy
+        labels:
+          key: labels
+    postableAlerts:
+      items:
+        $ref: '#/components/schemas/postableAlert'
+      type: array
+    postableAlert:
+      allOf:
+      - properties:
+          startsAt:
+            format: date-time
+            type: string
+          endsAt:
+            format: date-time
+            type: string
+          annotations:
+            $ref: '#/components/schemas/labelSet'
+        type: object
+      - $ref: '#/components/schemas/alert'
+    alertGroups:
+      items:
+        $ref: '#/components/schemas/alertGroup'
+      type: array
+    alertGroup:
+      example:
+        alerts:
+        - generatorURL: https://openapi-generator.tech
+          receivers:
+          - name: name
+          - name: name
+          fingerprint: fingerprint
+          annotations: null
+          startsAt: 2000-01-23T04:56:07.000+00:00
+          endsAt: 2000-01-23T04:56:07.000+00:00
+          updatedAt: 2000-01-23T04:56:07.000+00:00
+          status:
+            silencedBy:
+            - silencedBy
+            - silencedBy
+            state: unprocessed
+            inhibitedBy:
+            - inhibitedBy
+            - inhibitedBy
+          labels:
+            key: labels
+        - generatorURL: https://openapi-generator.tech
+          receivers:
+          - name: name
+          - name: name
+          fingerprint: fingerprint
+          annotations: null
+          startsAt: 2000-01-23T04:56:07.000+00:00
+          endsAt: 2000-01-23T04:56:07.000+00:00
+          updatedAt: 2000-01-23T04:56:07.000+00:00
+          status:
+            silencedBy:
+            - silencedBy
+            - silencedBy
+            state: unprocessed
+            inhibitedBy:
+            - inhibitedBy
+            - inhibitedBy
+          labels:
+            key: labels
+        receiver:
+          name: name
+        labels:
+          key: labels
+      properties:
+        labels:
+          additionalProperties:
+            type: string
+          type: object
+        receiver:
+          $ref: '#/components/schemas/receiver'
+        alerts:
+          items:
+            $ref: '#/components/schemas/gettableAlert'
+          type: array
+      required:
+      - alerts
+      - labels
+      - receiver
+      type: object
+    alertStatus:
+      example:
+        silencedBy:
+        - silencedBy
+        - silencedBy
+        state: unprocessed
+        inhibitedBy:
+        - inhibitedBy
+        - inhibitedBy
+      properties:
+        state:
+          enum:
+          - unprocessed
+          - active
+          - suppressed
+          type: string
+        silencedBy:
+          items:
+            type: string
+          type: array
+        inhibitedBy:
+          items:
+            type: string
+          type: array
+      required:
+      - inhibitedBy
+      - silencedBy
+      - state
+      type: object
+    receiver:
+      example:
+        name: name
+      properties:
+        name:
+          type: string
+      required:
+      - name
+      type: object
+    labelSet:
+      additionalProperties:
+        type: string
+      type: object
+    postSilences_200_response:
+      example:
+        silenceID: silenceID
+      properties:
+        silenceID:
+          type: string
+      type: object
+x-original-swagger-version: "2.0"
